@@ -17,16 +17,17 @@ class MlhTable
     ) do |faraday|
       faraday.use Faraday::Response::RaiseError
       faraday.adapter Faraday.default_adapter
-    end
-    response = @faraday_connection.get
-    unless Rails.configuration.cache_store == :null_store
-      response.body do
-        ActiveSupport::Cache.lookup_store(
-          *Rails.configuration.cache_store,
-          expires_in: 3.hours
-        )
+      faraday.response :caching do
+        unless Rails.configuration.cache_store == :null_store
+          ActiveSupport::Cache.lookup_store(
+            *Rails.configuration.cache_store,
+            namespace: 'mlh',
+            expires_in: 3.hours
+          )
+        end
       end
     end
+    response = @faraday_connection.get
     if response.success?
       response.body
     else
